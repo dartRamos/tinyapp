@@ -11,6 +11,7 @@ const urlDatabase = {
 
 app.use(express.urlencoded({ extended: true }));
 
+// Function to generate a random 6-character string
 function generateRandomString() {
   const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
   let result = '';
@@ -21,37 +22,55 @@ function generateRandomString() {
 }
 
 app.post("/urls", (req, res) => {
-  console.log(req.body); // Log the POST request body to the console
-  res.send("Ok"); // Respond with 'Ok' (we will replace this)
+  const longURL = req.body.longURL; // Get the long URL from the form data
+  const shortURL = generateRandomString(); // Generate a random short URL
+
+  // Save the long URL and short URL ID to the urlDatabase
+  urlDatabase[shortURL] = longURL;
+
+  // Redirect the user to created short URL page
+  res.redirect(`/urls/${shortURL}`);
 });
 
-
+// GET route for the homepage
 app.get("/", (req,res) => {
   res.send("Hello!");
 });
 
+// GET route to view the JSON representation of the URL database
 app.get("/urls.json", (req, res) => {
   res.json(urlDatabase);
 });
 
+// A simple route to demonstrate a hello world
 app.get("/hello", (req, res) => {
   res.send("<html><body>Hello <b>World</b></body></html>\n");
 });
 
+// Display the list of all URLs
 app.get("/urls", (req, res) => {
   const templateVars = { urls: urlDatabase };
   res.render("urls_index", templateVars);
 });
 
+// Render the form to create a new URL
 app.get("/urls/new", (req, res) => {
   res.render("urls_new");
 });
 
+// Show the details for a specific URL (short URL)
 app.get("/urls/:id", (req, res) => {
   const templateVars = { id: req.params.id, longURL: urlDatabase[req.params.id] };
   res.render("urls_show", templateVars);
 });
 
+// Redirect route for short URLs to long URLs
+app.get("/u/:id", (req, res) => {
+  const longURL = urlDatabase[req.params.id];
+  res.redirect(longURL); // Redirect to the corresponding long URL
+});
+
+// Start the server
 app.listen(PORT, () => {
   console.log(`Example app listening on port ${PORT}!`);
 });
