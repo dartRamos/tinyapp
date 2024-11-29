@@ -65,7 +65,7 @@ app.get("/urls/:id", (req, res) => {
 });
 
 // Redirect route for short URLs to long URLs
-app.get("/u/:id", (req, res) => {
+app.get("/urls/:id", (req, res) => {
   const longURL = urlDatabase[req.params.id];
   res.redirect(longURL); // Redirect to the corresponding long URL
 });
