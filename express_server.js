@@ -1,15 +1,16 @@
 const express = require("express");
+const cookieParser = require("cookie-parser");
 const app = express();
 const PORT = 8080;
 
 app.set("view engine", "ejs");
+app.use(express.urlencoded({ extended: true }));
+app.use(cookieParser()); 
 
 const urlDatabase = {
   b2xVn2: "http://www.lighthouselabs.ca",
   "9sm5xK": "http://www.google.com",
 };
-
-app.use(express.urlencoded({ extended: true }));
 
 // Function to generate a random 6-character string
 function generateRandomString() {
@@ -49,8 +50,19 @@ app.get("/hello", (req, res) => {
 
 // Display the list of all URLs
 app.get("/urls", (req, res) => {
-  const templateVars = { urls: urlDatabase };
-  res.render("urls_index", templateVars);
+  const templateVars = {
+    username: req.cookies["username"], // Retrieve username from cookies
+    urls: urlDatabase, // Add the URL database
+  };
+  res.render("urls_index", templateVars); // Render urls_index.ejs and pass templateVars
+});
+
+// Route to render the form for creating a new URL, passing the username from cookies (if available)
+app.get("/urls/new", (req, res) => {
+  const templateVars = {
+    username: req.cookies["username"], // Get username from cookie
+  };
+  res.render("urls_new", templateVars); // Pass username to urls_new.ejs
 });
 
 // Render the form to create a new URL

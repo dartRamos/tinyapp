@@ -18,6 +18,11 @@
         <a class="nav-item nav-link" href="/urls/new">Create New URL</a>
       </div>
     </div>
+      <% if (username) { %>
+      <span class="navbar-text mr-3">
+        <%= username %>
+      </span>
+    <% } else { %>
     <form action="/login" method="POST" class="d-flex align-items-center">
       <input
         class="form-control"
@@ -28,5 +33,6 @@
       />
       <button typer="submit" class="btn btn-success">Login</button>
     </form>
+    <% } %>
   </nav>
 </header>
