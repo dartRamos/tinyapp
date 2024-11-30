@@ -70,6 +70,7 @@ app.get("/urls/:id", (req, res) => {
   res.redirect(longURL); // Redirect to the corresponding long URL
 });
 
+// POST route to handle updating the long URL for a given short URL
 app.post("/urls/:id", (req, res) => {
   const shortURL = req.params.id;
   const newLongURL = req.body.longURL;
@@ -78,11 +79,19 @@ app.post("/urls/:id", (req, res) => {
   res.redirect("/urls")
 })
 
+// POST route to handle deleting a URL
 app.post("/urls/:id/delete", (req, res) => {
   const id = req.params.id;
   delete urlDatabase[id];
   res.redirect("/urls");
 });
+
+app.post("/login", (req, res) => {
+  const { username } = req.body;
+
+  res.cookie('username', username);
+  res.redirect("/urls");
+})
 
 // Start the server
 app.listen(PORT, () => {
