@@ -21,6 +21,9 @@
       <% if (username) { %>
       <span class="navbar-text mr-3">
         <%= username %>
+        <form action="logout" method="POST" class="display:inline;">
+          <button type="submit" class="btn btn-secondary">Log Out</button>
+        </form>
       </span>
     <% } else { %>
     <form action="/login" method="POST" class="d-flex align-items-center">

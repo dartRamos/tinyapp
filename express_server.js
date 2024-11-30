@@ -22,6 +22,7 @@ function generateRandomString() {
   return result;
 }
 
+// POST route to create a new short URL and save it to the database
 app.post("/urls", (req, res) => {
   const longURL = req.body.longURL; // Get the long URL from the form data
   const shortURL = generateRandomString(); // Generate a random short URL
@@ -98,10 +99,17 @@ app.post("/urls/:id/delete", (req, res) => {
   res.redirect("/urls");
 });
 
+// POST route to handle user login and set the username in cookies
 app.post("/login", (req, res) => {
   const { username } = req.body;
 
   res.cookie('username', username);
+  res.redirect("/urls");
+});
+
+// POST route to handle suer log out and clear the cookies
+app.post("/logout", (req, res) => {
+  res.clearCookie("username");
   res.redirect("/urls");
 })
 
