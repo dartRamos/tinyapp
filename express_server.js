@@ -66,12 +66,12 @@ app.get("/urls/new", (req, res) => {
   res.render("urls_new", templateVars); // Pass username to urls_new.ejs
 });
 
-// Render the form to create a new URL
+// Render the "urls_new" template to display the form for creating a new URL
 app.get("/urls/new", (req, res) => {
   res.render("urls_new");
 });
 
-// Show the details for a specific URL (short URL)
+// Render the "urls_show" template to display details for a specific URL based on the ":id" parameter
 app.get("/urls/:id", (req, res) => {
   const templateVars = { id: req.params.id, longURL: urlDatabase[req.params.id] };
   res.render("urls_show", templateVars);
@@ -82,6 +82,11 @@ app.get("/urls/:id", (req, res) => {
   const longURL = urlDatabase[req.params.id];
   res.redirect(longURL); // Redirect to the corresponding long URL
 });
+
+// Render the "register" form when the "/register" route is accessed
+app.get("/register", (req, res) => {
+  res.render("register");
+})
 
 // POST route to handle updating the long URL for a given short URL
 app.post("/urls/:id", (req, res) => {
