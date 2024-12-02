@@ -84,7 +84,7 @@ app.get("/urls", (req, res) => {
   res.render("urls_index", templateVars); // Render urls_index.ejs and pass templateVars
 });
 
-// Route to render the form for creating a new URL, passing the username from cookies (if available)
+// Route to render the form for creating a new URL, passing the username from cookies
 app.get("/urls/new", (req, res) => {
   const userID = req.cookies["user_id"]; // Retrieve user_id from cookies
   const user = users[userID]; // Find the user object based on user_id
@@ -92,7 +92,7 @@ app.get("/urls/new", (req, res) => {
   const templateVars = {
     user: user, // Pass the entire user object
   };
-  res.render("urls_new", templateVars); // Pass username to urls_new.ejs
+  res.render("urls_new", templateVars); // Pass user object to urls_new.ejs
 });
 
 // Render the "urls_new" template to display the form for creating a new URL
@@ -114,8 +114,24 @@ app.get("/urls/:id", (req, res) => {
 
 // Render the "register" form when the "/register" route is accessed
 app.get("/register", (req, res) => {
-  res.render("register");
-})
+  const userID = req.cookies["user_id"]
+  const user = users[userID]
+
+  const templateVars = {
+    user: user,
+  };
+  res.render("register", templateVars);
+});
+
+app.get("/login", (req, res) => {
+  const userID = req.cookies["user_id"]
+  const user = users[userID]
+
+  const templateVars = {
+    user: user,
+  };
+  res.render("login", templateVars);
+});
 
 // POST route to handle updating the long URL for a given short URL
 app.post("/urls/:id", (req, res) => {
@@ -133,11 +149,20 @@ app.post("/urls/:id/delete", (req, res) => {
   res.redirect("/urls");
 });
 
-// POST route to handle user login and set the username in cookies
+// POST route to handle user login and set the user_id cookies
 app.post("/login", (req, res) => {
   const { email, password } = req.body;
+  const existingUser = getUserByEmail(email);
 
-  res.cookie('user_id', email);
+  if(!existingUser) {
+    return res.status(403).send("This email is not registered.")
+  };
+
+  if(existingUser.password !== password) {
+    return res.status(403).send("The password you entered is incorrect.")
+  };
+
+  res.cookie('user_id', existingUser.id);
   res.redirect("/urls");
 });
 
@@ -173,7 +198,7 @@ app.post("/register", (req, res) => {
 // POST route to handle suer log out and clear the cookies
 app.post("/logout", (req, res) => {
   res.clearCookie("user_id");
-  res.redirect("/urls");
+  res.redirect("/login");
 });
 
 // Start the server

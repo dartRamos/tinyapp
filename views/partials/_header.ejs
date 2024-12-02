@@ -22,7 +22,7 @@
       <% if (!user) { %> <!-- Check if there is no user -->
         <a class="nav-item nav-link" href="/login">Login</a>
     <% } else { %>
-      <%= user.email %> <!-- Display user's email or any other info -->
+      <span class="mr-3">Logged in as: <%= user.id %></span> <!-- Display user's email or any other info -->
         <form action="/logout" method="POST" class="display:inline;">
           <button type="submit" class="btn btn-secondary">Log Out</button>
         </form>
