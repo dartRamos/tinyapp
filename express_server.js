@@ -20,7 +20,20 @@ function generateRandomString() {
     result += characters.charAt(Math.floor(Math.random() * characters.length));
   }
   return result;
-}
+};
+
+const users = {
+  userRandomID: {
+    id: "userRandomID",
+    email: "user@example.com",
+    password: "purple-monkey-dinosaur",
+  },
+  user2RandomID: {
+    id: "user2RandomID",
+    email: "user2@example.com",
+    password: "dishwasher-funk",
+  },
+};
 
 // POST route to create a new short URL and save it to the database
 app.post("/urls", (req, res) => {
@@ -51,8 +64,11 @@ app.get("/hello", (req, res) => {
 
 // Display the list of all URLs
 app.get("/urls", (req, res) => {
+  const userID = req.cookies["user_id"]; // Retrieve user_id from cookies
+  const user = users[userID]; // Find the user object based on user_id
+
   const templateVars = {
-    username: req.cookies["username"], // Retrieve username from cookies
+    user: user, // Pass the entire user object
     urls: urlDatabase, // Add the URL database
   };
   res.render("urls_index", templateVars); // Render urls_index.ejs and pass templateVars
@@ -60,8 +76,11 @@ app.get("/urls", (req, res) => {
 
 // Route to render the form for creating a new URL, passing the username from cookies (if available)
 app.get("/urls/new", (req, res) => {
+  const userID = req.cookies["user_id"]; // Retrieve user_id from cookies
+  const user = users[userID]; // Find the user object based on user_id
+
   const templateVars = {
-    username: req.cookies["username"], // Get username from cookie
+    user: user, // Pass the entire user object
   };
   res.render("urls_new", templateVars); // Pass username to urls_new.ejs
 });
@@ -106,17 +125,35 @@ app.post("/urls/:id/delete", (req, res) => {
 
 // POST route to handle user login and set the username in cookies
 app.post("/login", (req, res) => {
-  const { username } = req.body;
+  const { email, password } = req.body;
 
-  res.cookie('username', username);
+  res.cookie('user_id', email);
+  res.redirect("/urls");
+});
+
+// POST route to handle user registration
+app.post("/register", (req, res) => {
+  const { email, password } = req.body; // Get email and password from the form data
+  const userID = generateRandomString(); // Generate random unique user ID
+
+   // Adding new user object to users object
+  users[userID] = {
+    id: userID,
+    email: email,
+    password: password,
+  };
+
+  console.log("Users object:", users);
+
+  res.cookie("user_id", userID);
   res.redirect("/urls");
 });
 
 // POST route to handle suer log out and clear the cookies
 app.post("/logout", (req, res) => {
-  res.clearCookie("username");
+  res.clearCookie("user_id");
   res.redirect("/urls");
-})
+});
 
 // Start the server
 app.listen(PORT, () => {
