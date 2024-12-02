@@ -22,6 +22,16 @@ function generateRandomString() {
   return result;
 };
 
+function getUserByEmail(email) {
+  for (let userID in users) {
+    if (users[userID].email === email) {
+      return users[userID];
+    };
+  };
+
+  return null;
+};
+
 const users = {
   userRandomID: {
     id: "userRandomID",
@@ -134,6 +144,17 @@ app.post("/login", (req, res) => {
 // POST route to handle user registration
 app.post("/register", (req, res) => {
   const { email, password } = req.body; // Get email and password from the form data
+
+  if(!email || !password) {
+    return res.status(400).send("Must enter email and/or password.")
+  };
+
+  const existingUser = getUserByEmail(email)
+
+  if(existingUser) {
+    return res.status(400).send("This email entered has already been used.")
+  };
+
   const userID = generateRandomString(); // Generate random unique user ID
 
    // Adding new user object to users object
