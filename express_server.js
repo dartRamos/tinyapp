@@ -1,16 +1,40 @@
+//  -------------------- PORT -------------------- //
+
+const PORT = 8080;
+
+// -------------------- DEPENDENCIES -------------------- //
+
 const express = require("express");
 const cookieParser = require("cookie-parser");
 const app = express();
-const PORT = 8080;
+
+// -------------------- MIDDLEWARE -------------------- //
 
 app.set("view engine", "ejs");
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser()); 
 
+// -------------------- DATA -------------------- //
+
 const urlDatabase = {
   b2xVn2: "http://www.lighthouselabs.ca",
   "9sm5xK": "http://www.google.com",
 };
+
+const users = {
+  userRandomID: {
+    id: "userRandomID",
+    email: "user@example.com",
+    password: "purple-monkey-dinosaur",
+  },
+  user2RandomID: {
+    id: "user2RandomID",
+    email: "user2@example.com",
+    password: "dishwasher-funk",
+  },
+};
+
+// -------------------- Functions -------------------- //
 
 // Function to generate a random 6-character string
 function generateRandomString() {
@@ -32,30 +56,7 @@ function getUserByEmail(email) {
   return null;
 };
 
-const users = {
-  userRandomID: {
-    id: "userRandomID",
-    email: "user@example.com",
-    password: "purple-monkey-dinosaur",
-  },
-  user2RandomID: {
-    id: "user2RandomID",
-    email: "user2@example.com",
-    password: "dishwasher-funk",
-  },
-};
-
-// POST route to create a new short URL and save it to the database
-app.post("/urls", (req, res) => {
-  const longURL = req.body.longURL; // Get the long URL from the form data
-  const shortURL = generateRandomString(); // Generate a random short URL
-
-  // Save the long URL and short URL ID to the urlDatabase
-  urlDatabase[shortURL] = longURL;
-
-  // Redirect the user to created short URL page
-  res.redirect(`/urls/${shortURL}`);
-});
+// -------------------- GET ROUTE HANDLERS -------------------- //
 
 // GET route for the homepage
 app.get("/", (req,res) => {
@@ -89,6 +90,10 @@ app.get("/urls/new", (req, res) => {
   const userID = req.cookies["user_id"]; // Retrieve user_id from cookies
   const user = users[userID]; // Find the user object based on user_id
 
+  if (!user) {
+    return res.redirect("/login")
+  }
+
   const templateVars = {
     user: user, // Pass the entire user object
   };
@@ -115,7 +120,13 @@ app.get("/urls/:id", (req, res) => {
 
 // Redirect route for short URLs to long URLs
 app.get("/u/:id", (req, res) => {
-  const longURL = urlDatabase[req.params.id];
+  const shortURL = req.params.id;
+  const longURL = urlDatabase[shortURL].longURL;
+
+  if (!longURL) {
+    return res.status(404).send("URL not found!")
+  }
+
   res.redirect(longURL); // Redirect to the corresponding long URL
 });
 
@@ -123,6 +134,10 @@ app.get("/u/:id", (req, res) => {
 app.get("/register", (req, res) => {
   const userID = req.cookies["user_id"]
   const user = users[userID]
+
+  if (user) {
+    return res.redirect("urls")
+  }
 
   const templateVars = {
     user: user,
@@ -134,10 +149,35 @@ app.get("/login", (req, res) => {
   const userID = req.cookies["user_id"]
   const user = users[userID]
 
+  if (user) {
+    return res.redirect("/urls")
+  }
+
   const templateVars = {
     user: user,
   };
   res.render("login", templateVars);
+});
+
+// -------------------- POST ROUTE HANDLERS -------------------- //
+
+// POST route to create a new short URL and save it to the database
+app.post("/urls", (req, res) => {
+  const userID = req.cookies["user_id"];
+  const user = users[userID];
+  
+  if (!user) {
+    return res.status(403).send("You need to be logged in to shorten URLs.");
+  }
+
+  const longURL = req.body.longURL; // Get the long URL from the form data
+  const shortURL = generateRandomString(); // Generate a random short URL
+
+  // Save the long URL and short URL ID to the urlDatabase
+  urlDatabase[shortURL] = longURL;
+
+  // Redirect the user to created short URL page
+  res.redirect(`/urls/${shortURL}`);
 });
 
 // POST route to handle updating the long URL for a given short URL
@@ -207,6 +247,8 @@ app.post("/logout", (req, res) => {
   res.clearCookie("user_id");
   res.redirect("/login");
 });
+
+// -------------------- PORT LISTENER -------------------- //
 
 // Start the server
 app.listen(PORT, () => {
