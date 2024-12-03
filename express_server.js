@@ -79,7 +79,7 @@ app.get("/urls", (req, res) => {
 
   const templateVars = {
     user: user, // Pass the entire user object
-    urls: urlDatabase, // Add the URL database
+    urls: urlDatabase, // Pass the URL database to the template
   };
   res.render("urls_index", templateVars); // Render urls_index.ejs and pass templateVars
 });
@@ -102,7 +102,14 @@ app.get("/urls/new", (req, res) => {
 
 // Render the "urls_show" template to display details for a specific URL based on the ":id" parameter
 app.get("/urls/:id", (req, res) => {
-  const templateVars = { id: req.params.id, longURL: urlDatabase[req.params.id] };
+  const userID = req.cookies["user_id"];
+  const user = users[userID];
+  
+  const templateVars = {
+    user: user,
+    id: req.params.id, // Pass the URL's short ID
+    longURL: urlDatabase[req.params.id], // Pass the long URL associated with the short URL
+  };
   res.render("urls_show", templateVars);
 });
 
