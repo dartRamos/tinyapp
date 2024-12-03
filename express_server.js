@@ -7,6 +7,7 @@ const PORT = 8080; // Define the port where the server will listen
 const express = require("express"); // Import the Express library
 const cookieParser = require("cookie-parser"); // Import the cookie parser middleware
 const app = express(); // Initialize the Express application
+const bcrypt = require("bcryptjs");
 
 // -------------------- MIDDLEWARE -------------------- //
 
@@ -273,13 +274,15 @@ app.post("/login", (req, res) => {
     return res.status(400).send("Both email and password are required.");
   }
 
-  const user = getUserByEmail(email); // Get the whole user object
+  const userID = getUserByEmail(email); // Get the whole user object
 
-  if (!user) {
+  if (!userID) {
     return res.status(403).send("This email is not registered.");
   }
 
-  if (user.password !== password) {
+  const user = users[userID];
+
+  if (!bcrypt.compareSync(password, user.password)) {
     return res.status(403).send("The password you entered is incorrect.");
   }
 
@@ -307,11 +310,13 @@ app.post("/register", (req, res) => {
 
   const userID = generateRandomString(); // Generate random unique user ID
 
+  const hashedPassword = bcrypt.hashSync(password, 10);
+
   // Adding new user object to users object
   users[userID] = {
     id: userID,
     email: email,
-    password: password,
+    password: hashedPassword,
   };
 
   res.cookie("user_id", userID);
