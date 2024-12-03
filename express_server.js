@@ -1,26 +1,34 @@
 //  -------------------- PORT -------------------- //
 
-const PORT = 8080;
+const PORT = 8080; // Define the port where the server will listen
 
 // -------------------- DEPENDENCIES -------------------- //
 
-const express = require("express");
-const cookieParser = require("cookie-parser");
-const app = express();
+const express = require("express"); // Import the Express library
+const cookieParser = require("cookie-parser"); // Import the cookie parser middleware
+const app = express(); // Initialize the Express application
 
 // -------------------- MIDDLEWARE -------------------- //
 
-app.set("view engine", "ejs");
-app.use(express.urlencoded({ extended: true }));
-app.use(cookieParser()); 
+app.set("view engine", "ejs"); // Set the view engine to EJS for rendering views
+app.use(express.urlencoded({ extended: true })); // Middleware to parse URL-encoded data (from forms)
+app.use(cookieParser());  // Middleware to parse cookies in incoming requests
 
 // -------------------- DATA -------------------- //
 
+// Mock data for the URL database, each URL has a short URL, long URL, and associated user ID
 const urlDatabase = {
-  b2xVn2: "http://www.lighthouselabs.ca",
-  "9sm5xK": "http://www.google.com",
+  b6U1: {
+    longURL: "https://www.tsn.ca",
+    userID: "aJ48lW",
+  },
+  i3BoGr: {
+    longURL: "https://www.google.ca",
+    userID: "aJ48lW",
+  },
 };
 
+// Mock data for users, each user has an ID, email, and password
 const users = {
   userRandomID: {
     id: "userRandomID",
@@ -46,6 +54,8 @@ function generateRandomString() {
   return result;
 };
 
+
+// Function to get a user by email address
 function getUserByEmail(email) {
   for (let userID in users) {
     if (users[userID].email === email) {
@@ -56,6 +66,18 @@ function getUserByEmail(email) {
   return null;
 };
 
+// Function to get all URLs associated with a specific user ID
+function urlsForUser(id) {
+  const userURLs = {};
+  for (let shortURL in urlDatabase) {
+    if (id === urlDatabase[shortURL].userID) {
+      userURLs[shortURL] = urlDatabase[shortURL].longURL;
+    }
+  }
+
+  return userURLs;
+}
+
 // -------------------- GET ROUTE HANDLERS -------------------- //
 
 // GET route for the homepage
@@ -63,7 +85,7 @@ app.get("/", (req,res) => {
   res.send("Hello!");
 });
 
-// GET route to view the JSON representation of the URL database
+// GET route to view the URL database in JSON format
 app.get("/urls.json", (req, res) => {
   res.json(urlDatabase);
 });
@@ -73,19 +95,27 @@ app.get("/hello", (req, res) => {
   res.send("<html><body>Hello <b>World</b></body></html>\n");
 });
 
-// Display the list of all URLs
+// Display the list of URLs for the logged-in user
 app.get("/urls", (req, res) => {
   const userID = req.cookies["user_id"]; // Retrieve user_id from cookies
   const user = users[userID]; // Find the user object based on user_id
 
+  if (!userID) {
+    return res.send("You must be logged in to see your URL.");
+  }
+
+  const userURLs = urlsForUser(userID) // Get all URLs associated with the logged-in user
+
   const templateVars = {
     user: user, // Pass the entire user object
-    urls: urlDatabase, // Pass the URL database to the template
+    urls: userURLs, // Pass the URL database to the template
   };
+
+  console.log("new template:", templateVars)
   res.render("urls_index", templateVars); // Render urls_index.ejs and pass templateVars
 });
 
-// Route to render the form for creating a new URL, passing the username from cookies
+// Route to render the form for creating a new URL
 app.get("/urls/new", (req, res) => {
   const userID = req.cookies["user_id"]; // Retrieve user_id from cookies
   const user = users[userID]; // Find the user object based on user_id
@@ -100,37 +130,44 @@ app.get("/urls/new", (req, res) => {
   res.render("urls_new", templateVars); // Pass user object to urls_new.ejs
 });
 
-// Render the "urls_new" template to display the form for creating a new URL
-app.get("/urls/new", (req, res) => {
-  res.render("urls_new");
-});
-
-// Render the "urls_show" template to display details for a specific URL based on the ":id" parameter
+// Render the "urls_show" template to show details of a specific URL based on its ID
 app.get("/urls/:id", (req, res) => {
   const userID = req.cookies["user_id"];
   const user = users[userID];
+  const shortURL = req.params.id;
   
   const templateVars = {
     user: user,
     id: req.params.id, // Pass the URL's short ID
-    longURL: urlDatabase[req.params.id], // Pass the long URL associated with the short URL
+    longURL: urlDatabase[shortURL].longURL, // Pass the long URL associated with the short URL
   };
   res.render("urls_show", templateVars);
 });
 
-// Redirect route for short URLs to long URLs
+// Redirect to the long URL for a short URL
 app.get("/u/:id", (req, res) => {
-  const shortURL = req.params.id;
-  const longURL = urlDatabase[shortURL].longURL;
+  const userID = req.cookies["user_id"];
 
-  if (!longURL) {
-    return res.status(404).send("URL not found!")
+  if (!userID) {
+    return res.status(403).send("You must be logged in to view your URLs.");
   }
 
+  const shortURL = req.params.id;
+  const urlEntry = urlDatabase[shortURL]; // Get the URL data for the short URL
+
+  if (!urlEntry) {
+    return res.status(404).send("URL not found!");
+  }
+
+  if (userID !== urlEntry.userID) {
+    return res.status(403).send("You can only view your own URLs.");
+  }
+
+  const longURL = urlEntry.longURL
   res.redirect(longURL); // Redirect to the corresponding long URL
 });
 
-// Render the "register" form when the "/register" route is accessed
+// Render the registration form if the user is not logged in
 app.get("/register", (req, res) => {
   const userID = req.cookies["user_id"]
   const user = users[userID]
@@ -145,6 +182,7 @@ app.get("/register", (req, res) => {
   res.render("register", templateVars);
 });
 
+// Render the login form if the user is not logged in
 app.get("/login", (req, res) => {
   const userID = req.cookies["user_id"]
   const user = users[userID]
@@ -161,7 +199,7 @@ app.get("/login", (req, res) => {
 
 // -------------------- POST ROUTE HANDLERS -------------------- //
 
-// POST route to create a new short URL and save it to the database
+// POST route to create a new short URL for the long URL submitted by the user
 app.post("/urls", (req, res) => {
   const userID = req.cookies["user_id"];
   const user = users[userID];
@@ -174,25 +212,56 @@ app.post("/urls", (req, res) => {
   const shortURL = generateRandomString(); // Generate a random short URL
 
   // Save the long URL and short URL ID to the urlDatabase
-  urlDatabase[shortURL] = longURL;
+  urlDatabase[shortURL] = { longURL, userID };
 
   // Redirect the user to created short URL page
   res.redirect(`/urls/${shortURL}`);
 });
 
-// POST route to handle updating the long URL for a given short URL
+// POST route to update the long URL for a given short URL
 app.post("/urls/:id", (req, res) => {
+  const userID = req.cookies["user_id"];
   const shortURL = req.params.id;
   const newLongURL = req.body.longURL;
 
-  urlDatabase[shortURL] = newLongURL;
+  if (!userID) {
+    return res.status(403).send("You must be logged in!");
+  }
+
+  if (!urlDatabase[shortURL]) {
+    return res.status(404).send("URL not found!");
+  }
+
+  const urlEntry = urlDatabase[shortURL];
+
+  if (userID !== urlEntry.userID) {
+    return res.status(403).send("You are not the creator of this URL!")
+  }
+
+  urlDatabase[shortURL].longURL = newLongURL;
   res.redirect("/urls")
 })
 
 // POST route to handle deleting a URL
 app.post("/urls/:id/delete", (req, res) => {
-  const id = req.params.id;
-  delete urlDatabase[id];
+  const userID = req.cookies["urser_id"];
+  const shortURL = req.params.id;
+
+  if (!userID) {
+    return res.status(403).send("You must be logged in to delete this URL!");
+  }
+
+  if(!urlDatabase[shortURL]) {
+    return res.status(404).send("URL not found!");
+  }
+
+  const urlEntry = urlDatabase[shortURL];
+
+  if (userID !== urlEntry.userID) {
+    return res.status(403).send("You cannot delete URLs that you did not create!");
+  }
+
+  delete urlDatabase[shortURL];
   res.redirect("/urls");
 });
 
