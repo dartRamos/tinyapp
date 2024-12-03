@@ -67,12 +67,12 @@ function getUserByEmail(email) {
 }
 
 // Function to get all URLs associated with a specific user ID
-function urlsForUser(userID) {
-  const userURLs = {};  // Initialize an empty object to store user-specific URLs
+function urlsForUser(id) {
+  const userURLs = {};
 
   for (let shortURL in urlDatabase) {
-    if (userID === urlDatabase[shortURL].userID) {
-      userURLs[shortURL] = urlDatabase[shortURL].longURL;
+    if (id === urlDatabase[shortURL].userID) {
+      userURLs[shortURL] = urlDatabase[shortURL]; // Store the full URL object
     }
   }
 
@@ -239,12 +239,12 @@ app.post("/urls/:id", (req, res) => {
   }
 
   urlDatabase[shortURL].longURL = newLongURL;
-  res.redirect("/urls");
+  res.redirect(`/urls/${shortURL}`);
 });
 
 // POST route to handle deleting a URL
 app.post("/urls/:id/delete", (req, res) => {
-  const userID = req.cookies["urser_id"];
+  const userID = req.cookies["user_id"];
   const shortURL = req.params.id;
 
   if (!userID) {
