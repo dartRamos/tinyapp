@@ -5,15 +5,21 @@ const PORT = 8080; // Define the port where the server will listen
 // -------------------- DEPENDENCIES -------------------- //
 
 const express = require("express"); // Import the Express library
-const cookieParser = require("cookie-parser"); // Import the cookie parser middleware
+const cookieSession = require("cookie-session"); // Import the cookie parser middleware
 const app = express(); // Initialize the Express application
 const bcrypt = require("bcryptjs");
 
 // -------------------- MIDDLEWARE -------------------- //
 
-app.set("view engine", "ejs"); // Set the view engine to EJS for rendering views
-app.use(express.urlencoded({ extended: true })); // Middleware to parse URL-encoded data (from forms)
-app.use(cookieParser());  // Middleware to parse cookies in incoming requests
+// Set the view engine to EJS for rendering views
+app.set("view engine", "ejs");
+// Middleware to parse URL-encoded data (from forms)
+app.use(express.urlencoded({ extended: true }));
+// Middleware to manage and store session data in cookies (automatically signed and encrypted)
+app.use(cookieSession({
+  name: 'session',  // The name of the session cookie
+  keys: ['key1', 'key2'] // Secret keys used to sign the session cookie
+}));
 
 // -------------------- DATA -------------------- //
 
@@ -92,14 +98,9 @@ app.get("/urls.json", (req, res) => {
   res.json(urlDatabase);
 });
 
-// A simple route to demonstrate a hello world
-app.get("/hello", (req, res) => {
-  res.send("<html><body>Hello <b>World</b></body></html>\n");
-});
-
 // Display the list of URLs for the logged-in user
 app.get("/urls", (req, res) => {
-  const userID = req.cookies["user_id"]; // Retrieve user_id from cookies
+  const userID = req.session.user_id; // Retrieve user_id from cookies
   const user = users[userID]; // Find the user object based on user_id
 
   if (!userID) {
@@ -118,7 +119,7 @@ app.get("/urls", (req, res) => {
 
 // Route to render the form for creating a new URL
 app.get("/urls/new", (req, res) => {
-  const userID = req.cookies["user_id"]; // Retrieve user_id from cookies
+  const userID = req.session.user_id; // Retrieve user_id from cookies
   const user = users[userID]; // Find the user object based on user_id
 
   if (!user) {
@@ -133,7 +134,7 @@ app.get("/urls/new", (req, res) => {
 
 // Render the "urls_show" template to show details of a specific URL based on its ID
 app.get("/urls/:id", (req, res) => {
-  const userID = req.cookies["user_id"];
+  const userID = req.session.user_id;
   const user = users[userID];
   const shortURL = req.params.id;
   
@@ -147,7 +148,7 @@ app.get("/urls/:id", (req, res) => {
 
 // Redirect to the long URL for a short URL
 app.get("/u/:id", (req, res) => {
-  const userID = req.cookies["user_id"];
+  const userID = req.session.user_id;
 
   if (!userID) {
     return res.status(403).send("You must be logged in to view your URLs.");
@@ -170,7 +171,7 @@ app.get("/u/:id", (req, res) => {
 
 // Render the registration form if the user is not logged in
 app.get("/register", (req, res) => {
-  const userID = req.cookies["user_id"];
+  const userID = req.session.user_id;
   const user = users[userID];
 
   if (user) {
@@ -185,7 +186,7 @@ app.get("/register", (req, res) => {
 
 // Render the login form if the user is not logged in
 app.get("/login", (req, res) => {
-  const userID = req.cookies["user_id"];
+  const userID = req.session.user_id;
   const user = users[userID];
 
   if (user) {
@@ -202,7 +203,7 @@ app.get("/login", (req, res) => {
 
 // POST route to create a new short URL for the long URL submitted by the user
 app.post("/urls", (req, res) => {
-  const userID = req.cookies["user_id"];
+  const userID = req.session.user_id;
   const user = users[userID];
   
   if (!user) {
@@ -221,7 +222,7 @@ app.post("/urls", (req, res) => {
 
 // POST route to update the long URL for a given short URL
 app.post("/urls/:id", (req, res) => {
-  const userID = req.cookies["user_id"];
+  const userID = req.session.user_id;
   const shortURL = req.params.id;
   const newLongURL = req.body.longURL;
 
@@ -245,7 +246,7 @@ app.post("/urls/:id", (req, res) => {
 
 // POST route to handle deleting a URL
 app.post("/urls/:id/delete", (req, res) => {
-  const userID = req.cookies["user_id"];
+  const userID = req.session.user_id;
   const shortURL = req.params.id;
 
   if (!userID) {
@@ -296,7 +297,7 @@ app.post("/register", (req, res) => {
     password: hashedPassword,
   };
 
-  res.cookie("user_id", userID);
+  req.session.user_id = userID;
   res.redirect("/urls");
 });
 
@@ -321,13 +322,13 @@ app.post("/login", (req, res) => {
     return res.status(403).send("The password you entered is incorrect.");
   }
 
-  res.cookie('user_id', user.id); // Use user.id, not userID
+  req.session.user_id = user.id;
   res.redirect("/urls");
 });
 
 // POST route to handle suer log out and clear the cookies
 app.post("/logout", (req, res) => {
-  res.clearCookie("user_id");
+  req.session = null; // Clears the session and los the user out
   res.redirect("/login");
 });
 
