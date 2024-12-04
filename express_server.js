@@ -266,30 +266,6 @@ app.post("/urls/:id/delete", (req, res) => {
   res.redirect("/urls");
 });
 
-// POST route to handle user login and set the user_id cookies
-app.post("/login", (req, res) => {
-  const { email, password } = req.body;
-
-  if (!email || !password) {
-    return res.status(400).send("Both email and password are required.");
-  }
-
-  const userID = getUserByEmail(email); // Get the whole user object
-
-  if (!userID) {
-    return res.status(403).send("This email is not registered.");
-  }
-
-  const user = users[userID];
-
-  if (!bcrypt.compareSync(password, user.password)) {
-    return res.status(403).send("The password you entered is incorrect.");
-  }
-
-  res.cookie('user_id', user.id); // Use user.id, not userID
-  res.redirect("/urls");
-});
-
 // POST route to handle user registration
 app.post("/register", (req, res) => {
   const { email, password } = req.body; // Get email and password from the form data
@@ -310,6 +286,7 @@ app.post("/register", (req, res) => {
 
   const userID = generateRandomString(); // Generate random unique user ID
 
+  // Hash the password using bcrypt
   const hashedPassword = bcrypt.hashSync(password, 10);
 
   // Adding new user object to users object
@@ -320,6 +297,31 @@ app.post("/register", (req, res) => {
   };
 
   res.cookie("user_id", userID);
+  res.redirect("/urls");
+});
+
+// POST route to handle user login and set the user_id cookies
+app.post("/login", (req, res) => {
+  const { email, password } = req.body;
+
+  if (!email || !password) {
+    return res.status(400).send("Both email and password are required.");
+  }
+
+  const userID = getUserByEmail(email); // Get the whole user object
+
+  if (!userID) {
+    return res.status(403).send("This email is not registered.");
+  }
+
+  const user = users[userID];
+
+  // Use bcrypt.compareSync to compare the provided password with the stored hashed password
+  if (!bcrypt.compareSync(password, user.password)) {
+    return res.status(403).send("The password you entered is incorrect.");
+  }
+
+  res.cookie('user_id', user.id); // Use user.id, not userID
   res.redirect("/urls");
 });
 
