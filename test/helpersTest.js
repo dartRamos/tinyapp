@@ -18,9 +18,9 @@ const testUsers = {
 describe('getUserByEmail', function() {
   it('should return a user with valid email', function() {
     const user = getUserByEmail("[email protected]", testUsers)
-    const expectedUserID = "userRandomID";
+    const expectedUserID = "userRandomID"
     // Write your assert statement here
-    assert.equal(user, expectedUserID, "User ID should be userRandomID");
+    assert.deepEqual(user, testUsers[expectedUserID], "User ID should be userRandomID");
   });
   it('should return undefined with an invalid email', function() {
     const user = getUserByEmail("[email protecte]", testUsers);
