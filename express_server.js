@@ -8,6 +8,7 @@ const express = require("express"); // Import the Express library
 const cookieSession = require("cookie-session"); // Import the cookie parser middleware
 const app = express(); // Initialize the Express application
 const bcrypt = require("bcryptjs");
+const { getUserByEmail } = require("./helpers")
 
 // -------------------- MIDDLEWARE -------------------- //
 
@@ -59,18 +60,6 @@ function generateRandomString() {
     result += characters.charAt(Math.floor(Math.random() * characters.length));
   }
   return result;
-}
-
-
-// Function to get a user by email address
-function getUserByEmail(email) {
-  for (let userID in users) {
-    if (users[userID].email === email) {
-      return userID;  // Return just the user ID
-    }
-  }
-
-  return null;  // Return null if no user with the given email is found
 }
 
 // Function to get all URLs associated with a specific user ID
@@ -279,7 +268,7 @@ app.post("/register", (req, res) => {
     return res.status(400).send("Password must be at least 6 characters long.");
   }
 
-  const user = getUserByEmail(email);
+  const user = getUserByEmail(email, users);
 
   if (user) {
     return res.status(400).send("This email entered has already been used.");
@@ -309,7 +298,7 @@ app.post("/login", (req, res) => {
     return res.status(400).send("Both email and password are required.");
   }
 
-  const userID = getUserByEmail(email); // Get the whole user object
+  const userID = getUserByEmail(email, users); // Get the whole user object
 
   if (!userID) {
     return res.status(403).send("This email is not registered.");
@@ -322,13 +311,13 @@ app.post("/login", (req, res) => {
     return res.status(403).send("The password you entered is incorrect.");
   }
 
-  req.session.user_id = user.id;
+  req.session.user_id = userID;
   res.redirect("/urls");
 });
 
 // POST route to handle suer log out and clear the cookies
 app.post("/logout", (req, res) => {
-  req.session = null; // Clears the session and los the user out
+  req.session = null; // Clears the session and logs the user out
   res.redirect("/login");
 });
 
